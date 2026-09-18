@@ -1,0 +1,131 @@
+#include <iostream>
+#include <chrono>
+#include <thread>
+#include <termios.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
+#include <unistd.h>
+#include <sys/select.h>
+#include <fstream>
+using namespace std;
+using namespace std::this_thread;
+using namespace std::chrono;
+//this is a easy demo to write chart
+termios enable_raw()
+{
+    struct termios raw;
+    tcgetattr(STDIN_FILENO, &raw);
+    termios old = raw;
+
+    cfmakeraw(&raw);
+    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+    return old;
+}
+void disable_raw(termios raw)
+{
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+int main()
+{
+    SDL_Init(SDL_INIT_AUDIO);
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+    Mix_Init(MIX_INIT_FLAC);
+    auto music = Mix_LoadMUS("test.flac");
+    Mix_PlayMusic(music, 0);
+    char buf[1];
+    fstream f("test.txt");
+    int write[7] ;
+    auto raw =enable_raw();
+    while (1)
+    {
+        // 123 4 567->sdf  gh  jkl
+        auto now_t = chrono::steady_clock::now();
+        for (int i=0;i<7;i++)
+        {
+            write[i]=0;
+        }
+        int n = read(STDIN_FILENO, buf, 1);
+        while (n != 0)
+        {
+            if (n > 0)
+            {
+                switch (buf[0])
+                {
+                case 's':
+                {
+                    //0
+                    
+                    write[0]=1;
+                    //get_keyboard(music, notes, score, num, 0);
+                    break;
+                }
+                case 'd':
+                {
+                    
+                    write[1]=1;
+                    break;
+                }
+                case 'f':
+                {
+                    
+                    write[2]=1;
+                    break;
+                }
+                case 'g':
+                {
+                    
+                    write[3]=1;
+                    break;
+                }
+                case 'h':
+                {
+                    
+                    write[4]=1;
+                    break;
+                }
+                case 'j':
+                {
+                    
+                    write[4]=1;
+                    break;
+                }
+                case 'k':
+                {
+                    write[5]=1;
+                    break;
+                }
+                case 'l':
+                {
+                    write[6]=1;
+                    break;
+                }
+                case 'q':
+                    Mix_FreeMusic(music);
+                    Mix_CloseAudio();
+                    Mix_Quit();
+                    f.close();
+                    return 0;
+                }
+            }
+            n = read(STDIN_FILENO, buf, 1);
+        }
+        for (int i=0;i<7;i++)
+        {
+            f << write[i];
+        }
+        f << "\n";
+        auto frametime = chrono::duration<float>(chrono::steady_clock::now() - now_t).count();
+        if (frametime < 0.01f)
+        {
+            sleep_for(chrono::milliseconds(int((0.01f - frametime)*1000)));
+        }
+    }
+    disable_raw(raw);
+    Mix_FreeMusic(music);
+    Mix_CloseAudio();
+    Mix_Quit();
+    f.close();
+    return 0;
+}
